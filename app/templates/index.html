@@ -195,6 +195,7 @@
     <label><span class="lb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0116 0v1"/></svg>Técnico</span><select id="tec"><option value="">Todos</option></select></label>
     <label><span class="lb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>Propriedade</span><select id="prop"><option value="">Todas</option></select></label>
     <label><span class="lb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h12l-2 4 2 4H5"/></svg>Situação</span><select id="sit"><option value="">Ativas e inativas</option><option value="ativa">Só ativas</option><option value="inativa">Só inativas</option></select></label>
+    <label><span class="lb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 12c0-4 3-7 7-7 0 4-3 7-7 7z"/><path d="M12 14c0-3-2-5-5-5 0 3 2 5 5 5z"/></svg>Cultura</span><select id="cul"><option value="">Todas</option></select></label>
     <div class="periodo">
       <label><span class="lb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>De</span><select id="de"></select></label><i>&rarr;</i><label><span class="lb"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Até</span><select id="ate"></select></label>
     </div>
@@ -343,6 +344,8 @@ function preenche(sel, itens){
   itens.forEach(v=>sel.add(new Option(v,v)));
   sel.value = itens.includes(atual) ? atual : '';
 }
+const _fetch0 = window.fetch.bind(window);
+window.fetch = (u, o) => { try { const c = $('cul') && $('cul').value; if (c && typeof u === 'string' && u.startsWith('/api/') && !/[?&]cultura=/.test(u)) u += (u.includes('?') ? '&' : '?') + 'cultura=' + encodeURIComponent(c); } catch (e) {} return _fetch0(u, o); };
 async function carregaFiltros(){
   const f = await (await fetch('/api/filtros?'+new URLSearchParams({projeto:$('proj').value, supervisor:$('sup').value, tecnico:$('tec').value, municipio:$('mun').value, regiao:$('reg').value, situacao:$('sit').value, de:$('de').dataset.ok?$('de').value:'', ate:$('de').dataset.ok?$('ate').value:''}))).json();
   if(!$('de').dataset.ok){ f.meses.forEach(m=>{$('de').add(new Option(m,m)); $('ate').add(new Option(m,m));}); $('de').value=f.meses[0];
@@ -350,7 +353,7 @@ async function carregaFiltros(){
     const hoje = new Date(), atual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
     let fim = f.meses[f.meses.length-1]; if (fim === atual && f.meses.length > 1) fim = f.meses[f.meses.length-2];
     $('ate').value = fim; $('de').dataset.ok=1; }
-  preenche($('proj'), f.projetos); preenche($('sup'), f.supervisores); preenche($('tec'), f.tecnicos); preenche($('mun'), f.municipios); preenche($('reg'), f.regioes||[]);
+  preenche($('proj'), f.projetos); preenche($('sup'), f.supervisores); preenche($('tec'), f.tecnicos); preenche($('mun'), f.municipios); preenche($('reg'), f.regioes||[]); preenche($('cul'), f.culturas||[]);
   const pa = $('prop').value; $('prop').length = 1; f.propriedades.forEach(p=>$('prop').add(new Option(p.nome+' ('+p.id+')', p.id)));
   $('prop').value = f.propriedades.some(p=>String(p.id)===pa)?pa:'';
 }
@@ -473,7 +476,7 @@ async function atualiza(){
       `<td class="sep">${brlc(x.margem_venda)}</td><td>${pct(x.var_margem_venda_pct)}</td>`+
       `<td class="sep">${nf.format(x.producao_media_produtor)}</td><td>${pct(x.var_prod_media_pct)}</td></tr>`).join('') + '</tbody>';
 }
-['proj','sup','tec','mun','reg','sit'].forEach(id => $(id).onchange = async () => { await carregaFiltros(); atualiza(); });
+['proj','sup','tec','mun','reg','cul','sit'].forEach(id => $(id).onchange = async () => { await carregaFiltros(); atualiza(); });
 $('mreg').onchange = () => { $('reg').value = $('mreg').value; $('reg').onchange(); };
 $('mniv').onchange = carregaMacro; $('mmet').onchange = desenhaMacro; $('mper').onchange = desenhaMacro; $('mgraf').onchange = desenhaMacro; $('mbase').onchange = desenhaMacro;
 $('prop').onchange=atualiza;

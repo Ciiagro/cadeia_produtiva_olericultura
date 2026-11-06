@@ -49,6 +49,17 @@ _CACHE_TTL = int(os.environ.get("CACHE_TTL", "300"))
 _CACHE: dict = {}
 
 
+import contextvars
+_CULT = contextvars.ContextVar("cultura", default=None)
+
+
+@app.middleware("http")
+async def le_cultura(request: Request, call_next):
+    """Filtro Cultura: vale para todos os endpoints (lido em _where)."""
+    _CULT.set((request.query_params.get("cultura") or "").strip() or None)
+    return await call_next(request)
+
+
 @app.middleware("http")
 async def cache_api(request: Request, call_next):
     if request.method != "GET" or not request.url.path.startswith("/api/") or _CACHE_TTL <= 0:
@@ -79,7 +90,7 @@ def index(request: Request):
     return templates.TemplateResponse(request, "index.html")
 
 
-def _where(supervisor=None, tecnico=None, projeto=None, propriedade=None, situacao=None, municipio=None, regiao=None):
+def _where(supervisor=None, tecnico=None, projeto=None, propriedade=None, situacao=None, municipio=None, regiao=None, cultura="__ctx__"):
     """Monta WHERE + parâmetros para os filtros (mesmas colunas nas duas views)."""
     # Regra fixa: o projeto TREINAMENTO SP nunca aparece (filtros, gráficos, destaques, causas, tabelas, Excel)
     w, p = ["COALESCE(projeto, '') NOT ILIKE 'TREINAMENTO%'"], {}
@@ -95,6 +106,10 @@ def _where(supervisor=None, tecnico=None, projeto=None, propriedade=None, situac
         w.append("municipio = :mu"); p["mu"] = municipio
     if regiao:
         w.append("regiao = :rg"); p["rg"] = regiao
+    if cultura == "__ctx__":
+        cultura = _CULT.get()
+    if cultura:   # propriedades que venderam esse produto (item da receita bruta)
+        w.append(f"id_propriedade IN (SELECT id_propriedade FROM {TIPO} WHERE grupo = 'Receita' AND classe = 'Receita bruta' AND item = :cu)"); p["cu"] = cultura
     if situacao == "ativa":
         w.append("ativa")
     elif situacao == "inativa":
@@ -123,13 +138,21 @@ def filtros(supervisor: str | None = None, tecnico: str | None = None, projeto: 
             return [r[0] for r in con.execute(text(
                 f"SELECT DISTINCT {coluna} FROM {TABLE} WHERE {' AND '.join(w)} ORDER BY 1"), p)]
         projetos, sups, tecs, muns, regs = lista("projeto"), lista("supervisor"), lista("tecnico"), lista("municipio"), lista("regiao")
+        wc, pc = _where(supervisor, tecnico, projeto, None, situacao, municipio, regiao, cultura=None)
+        _periodo(wc, pc)
+        try:
+            culturas = [r[0] for r in con.execute(text(
+                f"SELECT DISTINCT item FROM {TIPO} WHERE grupo = 'Receita' AND classe = 'Receita bruta' AND item IS NOT NULL "
+                f"AND id_propriedade IN (SELECT id_propriedade FROM {TABLE} WHERE {' AND '.join(wc)}) ORDER BY 1"), pc)]
+        except Exception:
+            culturas = []
         w2, p2 = _where(supervisor, tecnico, projeto, None, situacao, municipio, regiao)
         _periodo(w2, p2)
         props = [{"id": r[0], "nome": r[1]} for r in con.execute(text(
             f"SELECT DISTINCT id_propriedade, COALESCE(propriedade, 'Propriedade ' || id_propriedade) "
             f"FROM {TABLE} WHERE {' AND '.join(w2)} ORDER BY 2"), p2)]
         meses = [r[0] for r in con.execute(text(f"SELECT DISTINCT mes FROM {TABLE} WHERE mes >= :mi ORDER BY 1"), {"mi": MES_INICIO})]
-    return {"projetos": projetos, "supervisores": sups, "tecnicos": tecs, "municipios": muns, "regioes": regs, "propriedades": props, "meses": meses}
+    return {"projetos": projetos, "supervisores": sups, "tecnicos": tecs, "municipios": muns, "regioes": regs, "culturas": culturas, "propriedades": props, "meses": meses}
 
 
 @app.get("/api/propriedade/{id_propriedade}")
