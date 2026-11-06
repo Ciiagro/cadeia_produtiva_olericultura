@@ -31,8 +31,8 @@
   .logo{width:54px;height:54px;flex:none}
   .faixa h1{margin:0;font-size:26px;line-height:1.15;font-weight:700;letter-spacing:-.01em}
   .faixa p{margin:2px 0 0;font-size:13.5px;opacity:.92}
-  .atividade{display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px}
-  .atividade svg{width:34px;height:34px;flex:none}
+  .atividade{display:flex;align-items:center;gap:12px;font-weight:800;font-size:30px;letter-spacing:-.01em;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.6);border-radius:14px;padding:10px 22px;text-shadow:0 1px 3px rgba(0,0,0,.4);margin:0;flex:none}
+  .atividade svg{width:46px;height:46px;flex:none}
 
   .corpo{padding:18px 30px 48px;max-width:2200px;margin:0 auto}
   .filtros{background:var(--surf);border:1px solid var(--linha);border-radius:12px;padding:12px 16px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;align-items:end;margin-bottom:16px;position:sticky;top:8px;z-index:20;box-shadow:0 4px 14px rgba(70,30,25,.08)}
@@ -874,7 +874,10 @@ async function conferePlanilha(file){
       o.tecnico = o.tecnico || l.tecnico; o.rec += l.rec; o.desp += l.desp; o.prod += l.prod; o.visitas.push(l.visita); grupo.set(p, o); });
     // propriedade que só tem mão de obra familiar (sem receita, sem despesa direta, sem animais) e não está na planilha: não é lançamento relevante
     const soFam = P0.filter(p => !grupo.has(p) && (p.fam || 0) > 0 && Math.abs(p.recC) + Math.abs(p.desp - (compFam ? p.fam : 0)) + Math.abs(p.prod) <= 1);
-    const P = P0.filter(p => !soFam.includes(p) && ($('confSit').value === 'todas' || p.ativa || grupo.has(p)) && (!tecSel || grupo.has(p) || normC(p.tecnico) === normC(tecSel)));   // a planilha só traz propriedades ativas; "Ativas e inativas" mostra também as inativas do painel
+    const Pb = P0.filter(p => !soFam.includes(p) && ($('confSit').value === 'todas' || p.ativa || grupo.has(p)) && (!tecSel || grupo.has(p) || normC(p.tecnico) === normC(tecSel)));   // a planilha só traz propriedades ativas; "Ativas e inativas" mostra também as inativas do painel
+    // propriedade ATIVA só no painel, sem receita e só com despesa: lançamento feito muito depois da visita (a planilha agrupa pela data do lançamento, o painel pelo mês da visita)
+    const soTarde = Pb.filter(p => !grupo.has(p) && p.ativa && Math.abs(p.recC) <= 1 && Math.abs(p.prod || 0) <= 1 && p.desp > 1);
+    const P = Pb.filter(p => !soTarde.includes(p));
     const A = linhas, dif = [], soPan = P.filter(p => !grupo.has(p) && !(Math.abs(p.recC) + Math.abs(p.desp) + Math.abs(p.prod || 0) <= 1));   // só no painel com tudo em subgrupos que a planilha não traz (valor zero depois do desconto): não é diferença
     grupo.forEach(o => { const dr = o.p.recC - o.rec, dd = o.p.desp - o.desp, dp = o.p.prod - o.prod;
       if (Math.abs(dr) > 1 || Math.abs(dd) > 1 || (temProd && Math.abs(dp) > 1)) dif.push({a: o, p: o.p, dr, dd, dp}); });
@@ -907,9 +910,9 @@ async function conferePlanilha(file){
         ${lin('Receitas (receita bruta + venda de bem e empréstimo)', 'rec', R, 'recC')}${lin('Despesas diretas', 'desp', R)}${temProd ? lin('Kg vendidos (kg)', 'prod', L) : ''}</tbody></table></div>
       <div class="d-bloco" style="max-width:760px;margin-bottom:14px"><h3>${temVis ? 'Visitas (casadas pelo ID da Visita)' : 'Propriedades (casadas pelo ID da Propriedade)'}</h3>
         ${cnt('Na planilha', A.length)}${cnt('No painel (propriedades neste mês)', P.length)}${cnt('Com valor diferente', dif.length, dif.length ? 'neg' : 'pos')}
-        ${cnt('Só na planilha (faltam no painel)', soArq.length, soArq.length ? 'neg' : 'pos')}${soZero.length ? cnt('Visitas sem lançamento de olericultura (esperado, não entram no painel)', soZero.length, '') : ''}${cnt('Só no painel (não estão na planilha)', soPan.length, soPan.length ? 'neg' : 'pos')}</div>
+        ${cnt('Só na planilha (faltam no painel)', soArq.length, soArq.length ? 'neg' : 'pos')}${soZero.length ? cnt('Visitas sem lançamento de olericultura (esperado, não entram no painel)', soZero.length, '') : ''}${cnt('Só no painel (não estão na planilha)', soPan.length, soPan.length ? 'neg' : 'pos')}${soTarde.length ? cnt('Lançadas depois da visita (esperado: a planilha agrupa pela data do lançamento)', soTarde.length, '') : ''}</div>
       ${soArq.length ? `<details class="mini" open><summary>Só na planilha</summary><p>${lst(soArq, nomeA)}</p></details>` : ''}${soZero.length ? `<details class="mini"><summary>Visitas sem lançamento (valores zerados na planilha)</summary><p>${lst(soZero, nomeA)}</p></details>` : ''}
-      ${soPan.length ? `<details class="mini"><summary>Só no painel</summary><p>${lst(soPan, nomeP)}</p></details>` : ''}${soFam.length ? `<details class="mini"><summary>Só mão de obra familiar (${soFam.length}) — fora da conferência</summary><p>Sem receita e sem despesa direta; a planilha não traz essas propriedades: ${lst(soFam, nomeP)}</p></details>` : ''}
+      ${soTarde.length ? `<details class="mini"><summary>Lançadas depois da visita (${soTarde.length}) — fora da conferência</summary><p>${lst(soTarde, nomeP)}</p></details>` : ''}${soPan.length ? `<details class="mini"><summary>Só no painel</summary><p class="d-vazio">Se a propriedade é ativa e não está na planilha, o mais comum é lançamento feito muito depois da visita (ex.: visita de 2024 lançada em 2025 ou 2026): o painel conta no mês da visita, e a planilha agrupa pela data do lançamento. Se for inativa, a planilha só traz propriedades ativas.</p><p>${lst(soPan, nomeP)}</p></details>` : ''}${soFam.length ? `<details class="mini"><summary>Só mão de obra familiar (${soFam.length}) — fora da conferência</summary><p>Sem receita e sem despesa direta; a planilha não traz essas propriedades: ${lst(soFam, nomeP)}</p></details>` : ''}
       ${dif.length ? `<h3 class="c-tit">Visitas com valor diferente (maiores diferenças primeiro)</h3>${tabDif}<p><button type="button" id="confBaixa" class="btn">Baixar todas as diferenças (.xlsx)</button></p>` : ''}`;
     const bt = $('confBaixa');
     if (bt) bt.onclick = () => { const ws = XLSX.utils.json_to_sheet(dif.map(x => ({'ID Visita': x.a.visitas.join(', '), 'ID Propriedade': x.a.id, 'Propriedade': x.a.propriedade, 'Município': x.a.municipio, 'Técnico': x.a.tecnico, 'Receita planilha': x.a.rec, 'Receita painel': x.p.recC, 'Δ receita': x.dr, 'Despesa planilha': x.a.desp, 'Despesa painel': x.p.desp, 'Δ despesa': x.dd, 'Produção planilha': x.a.prod, 'Produção painel': x.p.prod, 'Δ produção': x.dp, 'De que é a diferença': oQue(x.p, x)})).concat(soArq.map(x => ({'ID Visita': x.visita, 'ID Propriedade': x.id, 'Propriedade': x.propriedade, 'Município': x.municipio, 'Técnico': x.tecnico, 'Receita planilha': x.rec, 'Despesa planilha': x.desp, 'Produção planilha': x.prod, 'Observação': 'só na planilha'}))));
