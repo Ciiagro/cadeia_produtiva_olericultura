@@ -11,8 +11,8 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
-    --bg:#f1f8ec; --surf:#ffffff; --ink:#1d2b19; --mut:#5d7056; --linha:#dae8d0; --suave:#f6fbf2;
-    --verde:#4f9a3c; --verde-esc:#2e5d22; --pos:#2e7d4f; --neg:#b3261e;
+    --bg:#f2fae6; --surf:#ffffff; --ink:#1d2b19; --mut:#5d7056; --linha:#dae8d0; --suave:#f6fbf2;
+    --verde:#3fae2a; --verde-esc:#237a1c; --pos:#2e7d4f; --neg:#b3261e;
     --c-receita:#1b7f5c; --c-venda:#2b59a8; --c-prod:#7a5ba6; --c-media:#0b7a80; --c-mat:#c9730a; --c-mvenda:#a23b72; --c-neutro:#5d7056; --c-desp:#c0392b;
   }
   *{box-sizing:border-box}
@@ -20,8 +20,8 @@
   body{margin:0;font:15px/1.45 'IBM Plex Sans',system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink);font-variant-numeric:tabular-nums}
   :focus-visible{outline:3px solid #f0b429;outline-offset:2px;border-radius:6px}
 
-  .faixa{position:relative;overflow:hidden;background:linear-gradient(90deg,var(--verde-esc),var(--verde));color:#fff;padding:16px 30px;display:flex;align-items:center;gap:18px;min-height:96px}
-  .faixa::before{content:"";opacity:.75;position:absolute;top:0;right:0;bottom:0;width:60%;-webkit-mask-image:linear-gradient(90deg,transparent,#000 30%);mask-image:linear-gradient(90deg,transparent,#000 30%);background:url(/img/banner_oleri.jpg) no-repeat right center/auto 100%}
+  .faixa{position:relative;overflow:hidden;background:linear-gradient(90deg,#14802c,#34a82c 45%,#76cf3a);color:#fff;padding:16px 30px;display:flex;align-items:center;gap:18px;min-height:96px}
+  .faixa::before{content:"";opacity:1;position:absolute;top:0;right:0;bottom:0;width:60%;-webkit-mask-image:linear-gradient(90deg,transparent,#000 30%);mask-image:linear-gradient(90deg,transparent,#000 30%);background:url(/img/banner_oleri.jpg) no-repeat right center/auto 100%}
   .faixa::after{content:"";position:absolute;top:0;right:0;bottom:0;width:30%;background:linear-gradient(270deg,rgba(46,93,34,.9),rgba(46,93,34,0))}
   .faixa>*{position:relative;z-index:1}
   .faixa .sep{width:1px;align-self:stretch;margin:6px 0;background:rgba(255,255,255,.35)}
@@ -151,7 +151,7 @@
   @media(min-width:1900px){.graficos{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
   /* ===== visual v2: cartões, gráficos e abas no estilo do modelo ===== */
-  :root{--bg:#f1f8ec;--sombra:0 2px 12px rgba(46,93,34,.07)}
+  :root{--bg:#f2fae6;--sombra:0 2px 12px rgba(46,93,34,.07)}
   .filtros,.kpi,.graf,.destaques,.detalhe,.ficha{border-color:#d9e7cf;box-shadow:var(--sombra)}
   .filtros{border-radius:14px}
   .btn{background:var(--verde-esc);box-shadow:0 2px 6px rgba(46,93,34,.3);border-radius:9px;padding:12px 20px}
