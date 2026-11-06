@@ -1,0 +1,4 @@
+Coloque aqui as fotos da olericultura (JPG):
+  banner_oleri.jpg  -> faixa do topo (imagem larga, ex.: 1600x300)
+  foto_oleri.jpg    -> foto redonda ao lado do logo (quadrada)
+Sem elas, o painel mostra a folha desenhada.
