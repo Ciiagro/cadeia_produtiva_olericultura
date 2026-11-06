@@ -828,7 +828,7 @@ async function conferePlanilha(file){
     const cMel = cVenda.length ? cVenda : cMel0;   // a planilha traz a quantidade vendida por categoria (Qtd Fêmeas…, Qtd Macho…, Qtd Matrizes…): a soma é o total vendido
     const cProd = col('Animais Vendidos') >= 0 ? col('Animais Vendidos') : -1;
     const temProd = cMel.length > 0 || cProd >= 0;
-    const despDireta = l => { if (cDirAll >= 0) return numC(l[cDirAll]); const x = i => i >= 0 ? numC(l[i]) : 0; return x(cDesp) - x(cFam) - x(cEmp) - x(cInv) - cExtra.reduce((s, i) => s + numC(l[i]), 0); };
+    const despDireta = l => { if (cDirAll >= 0) return numC(l[cDirAll]); const x = i => i >= 0 ? numC(l[i]) : 0; return x(cDesp) - x(cFam) - x(cEmp) - cExtra.reduce((s, i) => s + numC(l[i]), 0); };
     const melKg = l => cProd >= 0 ? numC(l[cProd]) : cMel.reduce((s, i) => s + numC(l[i]), 0);
     const g = (l, n) => { const c = col(n); return c >= 0 ? l[c] : null; };
     const linhasTodas = [], meses = new Set();
@@ -843,14 +843,14 @@ async function conferePlanilha(file){
     const r = await fetch('/api/conferencia?mes=' + mes); const d = r.ok ? await r.json() : {erro: 'HTTP ' + r.status};
     if (d.erro) { box.innerHTML = '<p class="d-vazio">Não consegui ler o painel: ' + d.erro + '</p>'; return; }
     const compFam = cDirAll < 0 && cFam < 0;   // planilha sem "Despesas Diretas" nem coluna de mão de obra familiar (ela está dentro de "Mão de obra")
-    const invNaoVem = cInv < 0 || linhasTodas.every(l => !l.inv);   // o Total Despesas do SisATeG soma "Investimento - aquisição de bem", mas a coluna da planilha vem vazia
+    const invCol = new Map(); linhasTodas.forEach(l => invCol.set(l.id, (invCol.get(l.id) || 0) + (l.inv || 0)));   // investimento que a planilha traz na coluna própria (então o Total Despesas NÃO o soma)
     const P0 = d.itens; let plantioTot = 0, invTot = 0;
     P0.forEach(p => { p.recC = p.rec + (p.rec_fora || 0); if (compFam) p.desp += (p.fam || 0);
       // "Plantio (COE)" é despesa direta no painel, mas a planilha do SisATeG não tem coluna para ela (nem soma no Total Despesas): sai da comparação
       p.plantio = ((d.tipos || {})[p.id] || []).filter(t => t[0] === 'Despesa' && t[1] === 'Despesa direta' && /^plantio/i.test(t[2] || '')).reduce((s, t) => s + t[3], 0);
       p.desp -= p.plantio; plantioTot += p.plantio;
       p.invv = ((d.tipos || {})[p.id] || []).filter(t => t[0] === 'Despesa' && /^investimento/i.test(t[2] || '')).reduce((s, t) => s + t[3], 0);
-      if (invNaoVem) { p.desp += p.invv; invTot += p.invv; } });
+      if (!invCol.get(p.id) && p.invv) { p.desp += p.invv; invTot += p.invv; } });   // coluna vazia: o Total Despesas soma o investimento, então ele entra na comparação
     const treinoSet = new Set((d.treino || []).map(String));   // projetos de treinamento não entram no painel: ficam fora da conferência
     linhas = linhasTodas.filter(l => !treinoSet.has(l.id)); nTreino = linhasTodas.length - linhas.length;
     // filtro por técnico: a lista vem da própria planilha (refeita a cada planilha nova)
